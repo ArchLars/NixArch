@@ -502,3 +502,32 @@ Other recommended caches include *FlakeHub* and *Determinate Systems*.
 
 ---
 
+
+## 7\u00a0FusionSync
+
+**FusionSync** keeps pacman upgrades coherent with the Nix desktop.
+It consists of two parts:
+
+1. A pacman hook writes updated package names to `/var/lib/fusionsync/pacman.log`.
+2. `fusion-sync` watches this log, regenerates `nixGL`/`nix-ld` wrappers and runs `home-manager switch` whenever core libraries change.
+
+Install it with:
+
+```bash
+sudo install -Dm755 fusion-sync/fusion-sync.sh /usr/local/bin/fusion-sync
+sudo install -Dm644 fusion-sync/fusion-sync.hook /etc/pacman.d/hooks/fusion-sync.hook
+```
+
+Enable the daemon (per-user):
+
+```bash
+systemctl --user enable --now fusion-sync.service
+```
+
+Daily updates are as easy as:
+
+```bash
+fusion-sync upgrade
+```
+
+This synchronizes pacman and Nix, reducing breakage after system upgrades.
