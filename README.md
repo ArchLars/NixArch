@@ -20,12 +20,144 @@ This guide describes a reproducible hybrid setup in which **Arch Linux** manages
 
 ## 1  Prepare Arch Linux (live ISO)
 
-1. Partition and format disks (following your existing “archtutorial”). Mount the target root under `/mnt`.
-2. Install the minimal base system:
-   ```bash
-   pacstrap /mnt base linux linux-firmware amd-ucode nano sudo zsh
-   ```
-3. Install the remaining Arch‑managed prerequisites (networking, audio stack, drivers, development tooling):
+1. Create a GPT partition table with three partitions AFTER checking your drive name with `lsblk -l` :
+
+```bash
+sgdisk --zap-all \
+    -n1:0:+1G  -t1:EF00 -c1:"EFI system" \
+    -n2:0:+40G -t2:8304 -c2:"Linux root (x86-64)" \
+    -n3:0:0    -t3:8302 -c3:"Linux home" \
+    /dev/nvme0n1
+```
+
+**Partition Layout:**
+
+* `/dev/nvme0n1p1` — 1GB EFI System Partition
+* `/dev/nvme0n1p2` — 40GB Root partition
+* `/dev/nvme0n1p3` — Remaining space for Home partition
+
+
+
+2. Create filesystems and mount them in the correct order:
+
+```bash
+# Format partitions
+d=/dev/nvme0n1
+mkfs.fat -F32 -n EFI ${d}p1 && \
+mkfs.ext4 -L root ${d}p2 && \
+mkfs.ext4 -L home ${d}p3
+
+# Mount root partition first
+mount /dev/disk/by-label/root /mnt
+
+# Create and mount EFI directory
+mkdir -p /mnt/boot
+mount /dev/disk/by-label/EFI /mnt/boot
+
+# Create and mount home directory
+mkdir /mnt/home
+mount /dev/disk/by-label/home /mnt/home
+```
+
+  
+3. Update mirrorlist for optimal download speeds and install the base system, obv replace Norway and Germany:
+
+```bash
+# Update mirrorlist with fastest mirrors
+reflector --country Norway --country Germany --age 12 --protocol https --sort age --save /etc/pacman.d/mirrorlist
+
+# Install minimal base system
+pacstrap /mnt base linux linux-firmware amd-ucode nano sudo zsh
+```
+
+
+```bash
+arch-chroot /mnt
+```
+
+4. Set Timezone
+
+```bash
+# Set timezone to Oslo (Norway)
+ln -sf /usr/share/zoneinfo/Europe/Oslo /etc/localtime
+# Set hardware clock
+hwclock --systohc
+```
+
+5. Configure Locale
+
+```bash
+# Edit locale generation file
+nano /etc/locale.gen
+Uncomment: en_US.UTF-8 UTF-8
+Uncomment: nb_NO.UTF-8 UTF-8 # Optional if you need second language
+
+# Generate locales
+locale-gen
+
+# Set system locale
+cat << EOF > /etc/locale.conf
+LANG=en_US.UTF-8
+LC_TIME=nb_NO.UTF-8 # Optional if you want to set the date & time to a specific LANG default
+EOF
+
+# Set console keymap. This even U.S keyboards has to set!
+echo "KEYMAP=no-latin1" > /etc/vconsole.conf 
+
+# Persist configure X11 keymap for non U.S keyboards
+cat << EOF > /etc/X11/xorg.conf.d/00-keyboard.conf
+Section "InputClass"
+    Identifier "system-keyboard"
+    MatchIsKeyboard "on"
+    Option "XkbLayout" "no"
+    Option "XkbModel" "pc105"
+EndSection
+EOF
+```
+
+6. Set Hostname and Hosts
+
+```bash
+# Set hostname
+echo "NixArch" > /etc/hostname
+
+# Configure hosts file
+cat << EOF > /etc/hosts
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   NixArch.localdomain NixArch
+EOF
+```
+
+7. Create User Account
+
+```bash
+# Set root password
+passwd
+
+# Create user with necessary groups
+useradd -m -G wheel,audio,video,input lars
+passwd lars
+
+# Set zsh as default shell for user and root
+chsh -s /usr/bin/zsh lars
+chsh -s /usr/bin/zsh
+
+# Enable sudo for wheel group
+EDITOR=nano visudo
+# Uncomment: %wheel ALL=(ALL:ALL) ALL
+```
+
+8. Install System Packages & Drivers
+
+```bash
+# Update package database
+pacman -Syu
+```
+
+# Install essential packages
+
+1. Install the remaining Arch‑managed prerequisites (networking, audio stack, drivers, development tooling):
    ```bash
    pacman -S --needed \
      networkmanager \
@@ -36,58 +168,65 @@ This guide describes a reproducible hybrid setup in which **Arch Linux** manages
      git wget \
      base-devel
    ```
-   *Everything else (display manager, desktop environment, graphical applications) is supplied by Nix.*
-4. Generate `fstab`:
-   ```bash
-   genfstab -U /mnt >> /mnt/etc/fstab
-   ```
 
----
 
-## 2  Chroot and core configuration
+Configure NVIDIA in Initramfs
 
 ```bash
-arch-chroot /mnt
+# Edit mkinitcpio configuration
+nano /etc/mkinitcpio.conf
+# MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+# Remove 'kms' from HOOKS=()
+# Remove 'base' and 'udev' from HOOKS=() and add 'systemd'
+(!IMPORTANT! - Otherwise your system won't boot!)
 
-# Time and locale
-ln -sf /usr/share/zoneinfo/Europe/Oslo /etc/localtime
-hwclock --systohc
-sed -i 's/^#\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
-locale-gen
-echo "LANG=en_US.UTF-8" > /etc/locale.conf
+# Regenerate initramfs
+mkinitcpio -P
+```
 
-# Hostname and hosts
-echo "NixArch" > /etc/hostname
-cat <<EOF > /etc/hosts
-127.0.0.1   localhost
-::1         localhost
-127.0.1.1   NixArch.localdomain NixArch
+Install and Configure Bootloader
+
+```bash
+# Install systemd-boot
+bootctl install
+
+# Configure bootloader
+cat << EOF > /boot/loader/loader.conf
+default arch
+timeout 10
+console-mode max
+editor no
 EOF
 
-# User setup
-passwd                      # set root password
-useradd -m -G wheel,audio,video,input lars
-passwd lars
-chsh -s /usr/bin/zsh lars
-EDITOR=nano visudo          # uncomment: %wheel ALL=(ALL) ALL
+# Create boot entry
+cat << EOF > /boot/loader/entries/arch.conf
+title   Arch Linux
+linux   /vmlinuz-linux
+initrd  /amd-ucode.img
+initrd  /initramfs-linux.img
+options rw quiet loglevel=3
+EOF
 ```
 
-Enable essential services:
+Configure Zram (Compressed Swap)
 
 ```bash
-systemctl enable NetworkManager systemd-timesyncd
-```
-
-Optional: configure zram swap for performance:
-
-```bash
-cat <<EOF > /etc/systemd/zram-generator.conf
+# Configure zram
+cat << EOF > /etc/systemd/zram-generator.conf
 [zram0]
 zram-size = min(ram / 2, 4096)
 compression-algorithm = zstd
 EOF
-systemctl enable systemd-zram-setup@zram0.service
 ```
+
+ Enable Essential Services
+
+```bash
+# Enable network and timesyncd
+systemctl enable NetworkManager systemd-timesyncd systemd-boot-update.service
+```
+
+---
 
 Install and configure the bootloader (example: systemd‑boot):
 
