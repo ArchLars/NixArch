@@ -67,7 +67,7 @@ mount /dev/disk/by-label/home /mnt/home
 reflector --country Norway --country Germany --age 12 --protocol https --sort age --save /etc/pacman.d/mirrorlist
 
 # Install minimal base system
-pacstrap /mnt base linux linux-firmware amd-ucode nano sudo zsh
+pacstrap /mnt base linux-zen linux-firmware amd-ucode nano sudo zsh
 ```
 
 
@@ -162,8 +162,8 @@ pacman -Syu
    pacman -S --needed \
      networkmanager \
      pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber \
-     linux-headers \
-     nvidia-open nvidia-utils \
+     linux-zen-headers \
+     nvidia-open-dkms nvidia-utils \
      zram-generator pacman-contrib \
      git wget \
      base-devel
@@ -482,7 +482,6 @@ sudo systemctl enable sddm.service
 | ------------------------------------- | ---------------------------------------------------- |
 | Update user environment               | `nix flake update && home-manager switch`            |
 | Add/remove a package                  | edit `home.nix` → `home-manager switch`              |
-| Create per‑project dev shell (direnv) | `echo "use nix" > .envrc && direnv allow`            |
 | Fast package search                   | `nix-locate -w bin/hledger`                          |
 | Rollback to previous generation       | `home-manager generations` → `home-manager rollback` |
 
@@ -499,63 +498,6 @@ trusted-public-keys = cache.nixos.org-1:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 Other recommended caches include *FlakeHub* and *Determinate Systems*.
-
----
-
-## 7  Debugging and auditing changes
-
-### 7.1  nix‑diff
-
-```bash
-nix build .#homeConfigurations.lars.activationPackage --profile old
-# make a change…
-nix build .#homeConfigurations.lars.activationPackage --profile new
-nix run nixpkgs#nix-diff -- ./old ./newhybrid Arch Linux + Nix flake
-```
-
-### 7.2  nvd
-
-```bash
-nvd diff result-1 result-2
-```
-
----
-
-## 8  Continuous Integration (GitHub Actions)
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: DeterminateSystems/nix-installer-action@v9
-      - run: nix flake check
-      - run: nix fmt -- --check
-```
-
-Add extra jobs, such as building the activation package, to guarantee the flake stays buildable.
-
----
-
-## 9  Running non‑Nix binaries
-
-With `programs.nix-ld.enable = true;` proprietary applications unpacked under `$HOME/.local/opt` can often be executed directly:
-
-```bash
-./some-game.AppImage  # links resolved via nix-ld wrapper
-```
-
-Prefer packaged software when available.
 
 ---
 
