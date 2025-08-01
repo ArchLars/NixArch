@@ -531,3 +531,24 @@ fusion-sync upgrade
 ```
 
 This synchronizes pacman and Nix, reducing breakage after system upgrades.
+
+## 8 UnityEnv
+
+**UnityEnv** exposes the Home Manager environment to the whole Arch system.
+It copies exported variables from `~/.nix-profile/etc/profile.d/hm-session-vars.sh`
+to `/etc/profile.d/nixarch-env.sh`, letting root and system services access the
+same paths and settings as your user session.
+
+Install it with:
+
+```bash
+sudo install -Dm755 unity-env/unity-env.sh /usr/local/bin/unity-env
+sudo install -Dm644 unity-env/unity-env.service /etc/systemd/system/unity-env.service
+sudo systemctl enable --now unity-env.service
+```
+
+Manually refresh after a `home-manager switch` with:
+
+```bash
+sudo unity-env update
+```
