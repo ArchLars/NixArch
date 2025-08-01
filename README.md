@@ -302,22 +302,42 @@ The example below includes all auxiliary inputs referenced later in this guide (
     stylix.url = "github:danth/stylix";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
-            , nixGL, stylix, ... }@inputs:
+  outputs = inputs@{ self,
+                     nixpkgs,
+                     nixpkgs-unstable,
+                     home-manager,
+                     nixGL,
+                     stylix,
+                     ... }:
     let
-      system   = "x86_64-linux";
-      pkgs     = import nixpkgs { inherit system; config.allowUnfree = true; };
-      unstable = import nixpkgs-unstable { inherit system; config.allowUnfree = true; };
+      system = "x86_64-linux";
+
+      # Stable channel
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+
+      # Unstable channel exposed via `unstable`
+      unstable = import nixpkgs-unstable {
+        inherit system;
+        config.allowUnfree = true;
+      };
     in {
-      homeManagerConfigurations.lars =
-        home-manager.lib.homeManagerConfiguration {
+      homeManagerConfigurations = {
+        lars = home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
-          extraSpecialArgs = { inherit unstable; };
+
+          # Pass extra inputs to the Home‑Manager modules
+          extraSpecialArgs = {
+            inherit unstable;
+            stylixLib = stylix.lib;
+          };
 
           modules = [
             ./home.nix
-            nixGL.homeModules.default       
-            stylix.homeManagerModules.stylix 
+            nixGL.homeManagerModules.default
+            stylix.homeManagerModules.stylix
           ];
         };
       };
@@ -330,7 +350,7 @@ The example below includes all auxiliary inputs referenced later in this guide (
 Below is an updated `home.nix` that enables KDE **Wayland** by default, removes the X11‑only Picom compositor, and sets session variables so Firefox, Electron/Chromium apps, and Qt automatically run natively on Wayland.
 
 ```nix
-{ pkgs, unstable, config, lib, ... }:
+{ pkgs, unstable, stylixLib, config, lib, ... }:
 
 {
   home.username      = "lars";
@@ -338,73 +358,66 @@ Below is an updated `home.nix` that enables KDE **Wayland** by default, removes 
   home.stateVersion  = "24.05";
   programs.home-manager.enable = true;
 
-  ## Core desktop packages (Plasma 6 Wayland)
-  home.packages =
-    (with unstable; [
-      kdePackages.plasma-desktop       
-      kdePackages.konsole
-      kdePackages.dolphin
-      kdePackages.sddm
-      kdePackages.kwayland-integration 
-      kdePackages.xdg-desktop-portal-kde
-      qt6.qtwayland qt5.qtwayland      
-      firefox thunderbird
-    ]);
+  ## Core desktop packages (Plasma 6 Wayland)
+  home.packages = with unstable; [
+    kdePackages.plasma-desktop
+    kdePackages.konsole
+    kdePackages.dolphin
+    kdePackages.sddm
+    kdePackages.kwayland-integration
+    kdePackages.xdg-desktop-portal-kde
+    qt6.qtwayland
+    qt5.qtwayland
+    firefox
+    thunderbird
+  ];
 
   # ---- Wayland‑specific session variables -----------------------------
   home.sessionVariables = {
-    MOZ_ENABLE_WAYLAND = "1";  # Firefox native Wayland
-    NIXOS_OZONE_WL     = "1";  # Electron/Chromium Wayland
-    QT_QPA_PLATFORM    = "wayland;xcb"; # fallback to X11 if needed
+    MOZ_ENABLE_WAYLAND = "1";   # Firefox native Wayland
+    NIXOS_OZONE_WL     = "1";   # Electron/Chromium Wayland
+    QT_QPA_PLATFORM    = "wayland;xcb"; # Fallback to X11 if needed
   };
 
   # ---- GPU integration -------------------------------------------------
   programs.konsole.package = config.lib.nixGL.wrap pkgs.konsole;
   programs.firefox.package = config.lib.nixGL.wrap pkgs.firefox;
   nixGL.defaultWrapper = "nvidia";   # choose "nvidia" or "mesa"
-
-  # ---- Secrets ---------------------------------------------------------
-  age.secrets.githubToken.file = "secrets/github_token.age";
-  programs.git.extraConfig.credential.helper =
     "store --file ${config.age.secrets.githubToken.path}";
 
   # ---- Theming ---------------------------------------------------------
   stylix = {
     autoEnable  = true;
-    colorScheme = stylix.colorSchemes.catppuccin-latte;
+    colorScheme = stylixLib.colorSchemes.catppuccin-latte;
     fonts = {
-      monospace = { package = pkgs.fira-code-nerd-font; name = "FiraCode Nerd Font"; };
-      sansSerif = { package = pkgs.inter;               name = "Inter"; };
+      monospace = {
+        package = pkgs.fira-code-nerd-font;
+        name    = "FiraCode Nerd Font";
+      };
+      sansSerif = {
+        package = pkgs.inter;
+        name    = "Inter";
+      };
     };
   };
 
-  # ---- Development conveniences ---------------------------------------
-  programs.direnv.enable            = true;
-  programs.direnv.nix-direnv.enable = true;
-  programs.nix-index.enable         = true;  
-
   # ---- Shell & prompt --------------------------------------------------
   programs.zsh = {
-    enable = true;
-    enableCompletion = true;
+    enable               = true;
+    enableCompletion     = true;
     syntaxHighlighting.enable = true;
-    autocd = true;
+    autocd               = true;
+
     zplug.enable = true;
     zplug.plugins = [
       { name = "zsh-users/zsh-autosuggestions"; }
       { name = "zsh-users/zsh-completions";    }
     ];
   };
-  programs.starship = {
-    enable = true;
-    settings = {
-      add_newline = false;
-      format = "$directory$git_branch$git_state$git_status$nodejs$rust$golang$cmd_duration$line_break$character";
-    };
-  };
 
   # ---- Utilities -------------------------------------------------------
-  services.kdeconnect.enable = true;  # was combined with Picom section; Picom removed
+  programs.nix-index.enable = true;
+  services.kdeconnect.enable = true;  # Picom removed; only KDE Connect
 
   # ---- nix‑ld for proprietary binaries --------------------------------
   programs.nix-ld.enable    = true;
