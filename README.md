@@ -201,9 +201,9 @@ EOF
 # Create boot entry
 cat << EOF > /boot/loader/entries/arch.conf
 title   Arch Linux
-linux   /vmlinuz-linux
+linux   /vmlinuz-linux-zen
 initrd  /amd-ucode.img
-initrd  /initramfs-linux.img
+initrd  /initramfs-linux-zen.img
 options rw quiet loglevel=3
 EOF
 ```
