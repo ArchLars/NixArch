@@ -256,7 +256,7 @@ Install Nix with the daemon (recommended for multi‑user):
 curl -L https://nixos.org/nix/install | sh -s -- --daemon
 ```
 
-> The Determinate Systems installer is an alternative that enables flakes and other modern defaults automatically. See its documentation for CI‑friendly installation behaviour.
+> The Determinate Systems installer is an alternative that enables flakes and other modern defaults automatically. 
 
 Enable flakes and the new Nix command explicitly:
 
@@ -280,7 +280,7 @@ This generates `~/.config/home-manager/flake.nix` and `home.nix` and bootstraps 
 
 ### 4.1  `flake.nix`
 
-The example below includes all auxiliary inputs referenced later in this guide (nixGL, Stylix, Agenix, treefmt‑nix, etc.):
+The example below includes all auxiliary inputs referenced later in this guide (nixGL, Stylix, etc.):
 
 ```nix
 {
@@ -298,21 +298,12 @@ The example below includes all auxiliary inputs referenced later in this guide (
     # GPU wrapper
     nixGL.url = "github:nix-community/nixGL";
 
-    # Secret management
-    agenix.url = "github:ryantm/agenix";
-
     # Theming
     stylix.url = "github:danth/stylix";
-
-    # Tree‑wide formatter orchestration
-    treefmt-nix.url = "github:numtide/treefmt-nix";
-
-    # Optional: flake‑parts for modularisation
-    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager
-            , nixGL, agenix, stylix, treefmt-nix, ... }@inputs:
+            , nixGL, stylix, ... }@inputs:
     let
       system   = "x86_64-linux";
       pkgs     = import nixpkgs { inherit system; config.allowUnfree = true; };
@@ -325,17 +316,11 @@ The example below includes all auxiliary inputs referenced later in this guide (
 
           modules = [
             ./home.nix
-            nixGL.homeModules.default       # GPU wrappers
-            stylix.homeManagerModules.stylix # Theming
-            agenix.homeManagerModules.default # Secret management
+            nixGL.homeModules.default       
+            stylix.homeManagerModules.stylix 
           ];
         };
-
-      ## Optional formatter preset (run: `nix fmt`)
-      formatter = pkgs.alejandra;
-
-      ## treefmt orchestrates multi‑language formatters
-      checks.treefmt = treefmt-nix.lib.mkCheck { inherit pkgs; };
+      };
     };
 }
 ```
@@ -356,16 +341,14 @@ Below is an updated `home.nix` that enables KDE **Wayland** by default, removes 
   ## Core desktop packages (Plasma 6 Wayland)
   home.packages =
     (with unstable; [
-      kdePackages.plasma-desktop       # pulls kwin‑wayland
+      kdePackages.plasma-desktop       
       kdePackages.konsole
       kdePackages.dolphin
       kdePackages.sddm
-      kdePackages.kwayland-integration # extra Wayland libs
+      kdePackages.kwayland-integration 
       kdePackages.xdg-desktop-portal-kde
-      qt6.qtwayland qt5.qtwayland      # Qt Wayland platform plugins
+      qt6.qtwayland qt5.qtwayland      
       firefox thunderbird
-    ]) ++ (with pkgs; [
-      statix nix-diff nvd nixfmt-rfc-style
     ]);
 
   # ---- Wayland‑specific session variables -----------------------------
@@ -398,7 +381,7 @@ Below is an updated `home.nix` that enables KDE **Wayland** by default, removes 
   # ---- Development conveniences ---------------------------------------
   programs.direnv.enable            = true;
   programs.direnv.nix-direnv.enable = true;
-  programs.nix-index.enable         = true;  # `command-not-found` hook
+  programs.nix-index.enable         = true;  
 
   # ---- Shell & prompt --------------------------------------------------
   programs.zsh = {
