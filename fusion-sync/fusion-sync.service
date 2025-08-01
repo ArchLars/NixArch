@@ -1,0 +1,9 @@
+[Unit]
+Description=FusionSync daemon
+
+[Service]
+ExecStart=/usr/local/bin/fusion-sync daemon
+Restart=always
+
+[Install]
+WantedBy=default.target
