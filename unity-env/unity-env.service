@@ -1,0 +1,10 @@
+[Unit]
+Description=Sync Nix environment with Arch login shells
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/unity-env update lars
+
+[Install]
+WantedBy=multi-user.target
