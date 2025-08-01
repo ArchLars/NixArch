@@ -383,7 +383,6 @@ Below is an updated `home.nix` that enables KDE **Wayland** by default, removes 
   programs.konsole.package = config.lib.nixGL.wrap pkgs.konsole;
   programs.firefox.package = config.lib.nixGL.wrap pkgs.firefox;
   nixGL.defaultWrapper = "nvidia";   # choose "nvidia" or "mesa"
-    "store --file ${config.age.secrets.githubToken.path}";
 
   # ---- Theming ---------------------------------------------------------
   stylix = {

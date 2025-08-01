@@ -31,7 +31,6 @@
   programs.konsole.package = config.lib.nixGL.wrap pkgs.konsole;
   programs.firefox.package = config.lib.nixGL.wrap pkgs.firefox;
   nixGL.defaultWrapper = "nvidia";   # choose "nvidia" or "mesa"
-    "store --file ${config.age.secrets.githubToken.path}";
 
   # ---- Theming ---------------------------------------------------------
   stylix = {
