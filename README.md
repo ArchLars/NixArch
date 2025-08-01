@@ -71,9 +71,9 @@ pacstrap /mnt base linux linux-firmware amd-ucode nano sudo zsh
 ```
 
 
-```bash
+
 arch-chroot /mnt
-```
+
 
 4. Set Timezone
 
@@ -227,19 +227,6 @@ systemctl enable NetworkManager systemd-timesyncd systemd-boot-update.service
 ```
 
 ---
-
-Install and configure the bootloader (example: systemd‑boot):
-
-```bash
-bootctl install
-cat <<EOF > /boot/loader/entries/arch.conf
-title   Arch Linux
-linux   /vmlinuz-linux
-initrd  /amd-ucode.img
-initrd  /initramfs-linux.img
-options rw quiet
-EOF
-```
 
 Exit the chroot, unmount, and reboot:
 
