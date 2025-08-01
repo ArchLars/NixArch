@@ -95,7 +95,7 @@ locale-gen
 # Set system locale
 cat << EOF > /etc/locale.conf
 LANG=en_US.UTF-8
-LC_TIME=nb_NO.UTF-8 # Optional if you want to set the date & time to a specific LANG default
+LC_TIME=nb_NO.UTF-8 # Optional if you want a specific LANG default
 EOF
 
 # Set console keymap. This even U.S keyboards has to set!
