@@ -219,6 +219,16 @@ compression-algorithm = zstd
 EOF
 ```
 
+```bash
+# Optimizing swap on zram
+cat << EOF > /etc/sysctl.d/99-vm-zram-parameters.conf
+vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
+EOF
+```
+
  Enable Essential Services
 
 ```bash
