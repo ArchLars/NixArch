@@ -433,15 +433,3 @@ Prefer packaged software when available.
 
 ---
 
-## 10  Future directions
-
-- **flake‑parts:** split the Home Manager config into reusable modules.
-- **Machine variants:** add laptop/desktop or workstation profiles.
-- **treefmt:** run `nix develop` → `treefmt` to auto‑format the whole repository.
-- **Agenix:** migrate all API keys and private files out of Git to encrypted `.age` files.
-- **Virtualised reviews:** use `nix build .#vm` to test contributions in ephemeral VMs before merging.
-
----
-
-
-hybrid Arch Linux + Nix flake
