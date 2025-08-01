@@ -379,7 +379,6 @@ Below is an updated `home.nix` that enables KDE **Wayland** by default, removes 
   stylix = {
     autoEnable  = true;
     colorScheme = stylix.colorSchemes.catppuccin-latte;
-    image       = ./wallpapers/nixarch-latte.png;
     fonts = {
       monospace = { package = pkgs.fira-code-nerd-font; name = "FiraCode Nerd Font"; };
       sansSerif = { package = pkgs.inter;               name = "Inter"; };
