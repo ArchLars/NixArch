@@ -58,7 +58,6 @@ mount /dev/disk/by-label/EFI /mnt/boot
 mkdir /mnt/home
 mount /dev/disk/by-label/home /mnt/home
 ```
-
   
 3. Update mirrorlist for optimal download speeds and install the base system, obv replace Norway and Germany:
 
@@ -68,12 +67,10 @@ reflector --country Norway --country Germany --age 12 --protocol https --sort ag
 
 # Install minimal base system
 pacstrap /mnt base linux-zen linux-firmware amd-ucode nano sudo zsh
-```
 
-
-
+# Enter the new system
 arch-chroot /mnt
-
+```
 
 4. Set Timezone
 
